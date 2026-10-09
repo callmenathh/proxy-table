@@ -19,8 +19,10 @@ export interface CustomCard {
   colors: Color[];
   rarity: Rarity;
   artist: string;
-  /** Art as a data URL. */
+  /** Art as a data URL, shown inside our frame. */
   art?: string;
+  /** A finished image of the whole card. When set it is shown instead of our frame. */
+  fullImage?: string;
   /** Art position in percent (0-100) and zoom (1 = cover). */
   artX: number;
   artY: number;

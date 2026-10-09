@@ -29,6 +29,7 @@ export function CardCreator() {
   const { hydrated, customCards, saveCustomCard, deleteCustomCard } = useLibrary();
   const [draft, setDraft] = useState<CustomCard>(blankCustomCard);
   const [status, setStatus] = useState("");
+  const mode = draft.fullImage !== undefined ? "full" : "frame";
   const previewRef = useRef<HTMLDivElement>(null);
   const rulesRef = useRef<HTMLTextAreaElement>(null);
   const saved = customCards.find((c) => c.id === draft.id);
@@ -58,6 +59,22 @@ export function CardCreator() {
       setStatus((e as Error).message);
     }
   };
+
+  const onFullImage = async (file?: File) => {
+    if (!file) return;
+    try {
+      // Keep PNGs lossless at roughly print resolution.
+      set("fullImage", await readImageFile(file, 1040, 1, file.type === "image/png" ? "image/png" : "image/jpeg"));
+    } catch (e) {
+      setStatus((e as Error).message);
+    }
+  };
+
+  const missing = [
+    !draft.name.trim() && "name",
+    !draft.cardType.trim() && "card type",
+    mode === "full" && !draft.fullImage && "card image",
+  ].filter(Boolean) as string[];
 
   const save = () => {
     saveCustomCard(draft);
@@ -98,6 +115,36 @@ export function CardCreator() {
       </aside>
 
       <section className="grid content-start gap-4 sm:grid-cols-2">
+        <Field label="Card image" wide>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => set("fullImage", undefined)}
+              className={`rounded-md border px-3 py-1.5 text-sm ${mode === "frame" ? "border-amber-400 bg-amber-400/15 text-white" : "border-white/10 text-neutral-400"}`}
+            >
+              Upload art, we draw the card
+            </button>
+            <button
+              onClick={() => mode === "frame" && set("fullImage", "")}
+              className={`rounded-md border px-3 py-1.5 text-sm ${mode === "full" ? "border-amber-400 bg-amber-400/15 text-white" : "border-white/10 text-neutral-400"}`}
+            >
+              Upload a finished card image
+            </button>
+          </div>
+          {mode === "full" && (
+            <div className="mt-3">
+              <input
+                type="file"
+                accept="image/*"
+                className="text-sm text-neutral-300 file:btn file:mr-3 file:border-0"
+                onChange={(e) => onFullImage(e.target.files?.[0])}
+              />
+              <p className="mt-2 text-xs text-neutral-500">
+                Still fill in the card info below. It&apos;s what players read on hover and what the deck checks use.
+              </p>
+            </div>
+          )}
+        </Field>
+
         <Field label="Name">
           <input className="input" value={draft.name} onChange={(e) => set("name", e.target.value)} placeholder="Grand Arbiter of Proxies" />
         </Field>
@@ -181,16 +228,18 @@ export function CardCreator() {
           </Field>
         </div>
 
-        <Field label="Art" wide>
-          <input type="file" accept="image/*" className="text-sm text-neutral-300 file:btn file:mr-3 file:border-0" onChange={(e) => onArt(e.target.files?.[0])} />
-          {draft.art && (
-            <div className="mt-3 grid grid-cols-3 gap-3">
-              <Slider label="Zoom" min={1} max={3} step={0.05} value={draft.artZoom} onChange={(v) => set("artZoom", v)} />
-              <Slider label="Left / right" min={0} max={100} step={1} value={draft.artX} onChange={(v) => set("artX", v)} />
-              <Slider label="Up / down" min={0} max={100} step={1} value={draft.artY} onChange={(v) => set("artY", v)} />
-            </div>
-          )}
-        </Field>
+        {mode === "frame" && (
+          <Field label="Art" wide>
+            <input type="file" accept="image/*" className="text-sm text-neutral-300 file:btn file:mr-3 file:border-0" onChange={(e) => onArt(e.target.files?.[0])} />
+            {draft.art && (
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                <Slider label="Zoom" min={1} max={3} step={0.05} value={draft.artZoom} onChange={(v) => set("artZoom", v)} />
+                <Slider label="Left / right" min={0} max={100} step={1} value={draft.artX} onChange={(v) => set("artX", v)} />
+                <Slider label="Up / down" min={0} max={100} step={1} value={draft.artY} onChange={(v) => set("artY", v)} />
+              </div>
+            )}
+          </Field>
+        )}
         <Field label="Artist">
           <input className="input" value={draft.artist} onChange={(e) => set("artist", e.target.value)} />
         </Field>
@@ -205,7 +254,7 @@ export function CardCreator() {
       <aside className="flex flex-col items-center gap-3">
         <CardFace ref={previewRef} card={draft} width={330} />
         <div className="flex flex-wrap justify-center gap-2">
-          <button className="btn-primary" onClick={save} disabled={!draft.name.trim() || !dirty}>
+          <button className="btn-primary" onClick={save} disabled={missing.length > 0 || !dirty}>
             {saved ? "Save changes" : "Save card"}
           </button>
           <button className="btn" onClick={download}>
@@ -229,6 +278,7 @@ export function CardCreator() {
             </>
           )}
         </div>
+        {missing.length > 0 && <p className="text-sm text-neutral-500">Still needed: {missing.join(", ")}.</p>}
         {status && <p className="text-sm text-neutral-400">{status}</p>}
       </aside>
     </main>

@@ -85,6 +85,14 @@ export const CardFace = forwardRef<HTMLDivElement, Props>(function CardFace({ ca
   const isCreature = /creature|vehicle/i.test(card.cardType) || card.power || card.toughness;
   const isWalker = /planeswalker/i.test(card.cardType) || card.loyalty;
 
+  if (card.fullImage)
+    return (
+      <div ref={ref} style={{ width, height: CARD_H * scale, borderRadius: 14 * scale, overflow: "hidden", flexShrink: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={card.fullImage} alt={card.name} draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      </div>
+    );
+
   return (
     <div style={{ width, height: CARD_H * scale, overflow: "hidden", borderRadius: 14 * scale, flexShrink: 0 }}>
       <div

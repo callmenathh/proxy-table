@@ -1,5 +1,5 @@
 /** Reads an image file and scales it down so it stays small enough to store. */
-export function readImageFile(file: File, maxSide = 1200, quality = 0.9): Promise<string> {
+export function readImageFile(file: File, maxSide = 1200, quality = 0.9, type = "image/jpeg"): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -10,7 +10,7 @@ export function readImageFile(file: File, maxSide = 1200, quality = 0.9): Promis
       canvas.height = Math.round(img.height * scale);
       canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg", quality));
+      resolve(canvas.toDataURL(type, quality));
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
