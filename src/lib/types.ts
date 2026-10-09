@@ -30,6 +30,8 @@ export interface CustomCard {
   isToken?: boolean;
   /** Set when this card is a proxy of a real card: its rules come from Scryfall. */
   reprintOf?: { scryfallId: string; name: string; colorIdentity: Color[] };
+  /** A reprint's own new name, shown in parentheses after the real name. */
+  newName?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -64,6 +66,11 @@ export interface Deck {
 
 export function newId(): string {
   return crypto.randomUUID();
+}
+
+/** The name printed on the card: "Real Name (New Name)" for a renamed reprint. */
+export function displayName(c: Pick<CustomCard, "name" | "newName" | "reprintOf">): string {
+  return c.reprintOf && c.newName?.trim() ? `${c.name} (${c.newName.trim()})` : c.name;
 }
 
 export function customTypeLine(c: Pick<CustomCard, "supertypes" | "cardType" | "subtypes" | "isToken">): string {

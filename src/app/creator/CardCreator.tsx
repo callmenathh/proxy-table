@@ -9,7 +9,7 @@ import { applyReprint } from "@/lib/reprint";
 import { cardByName } from "@/lib/scryfall";
 import { useLibrary } from "@/lib/store";
 import type { Color, CustomCard, Rarity } from "@/lib/types";
-import { blankCustomCard, COLORS, newId } from "@/lib/types";
+import { blankCustomCard, COLORS, displayName, newId } from "@/lib/types";
 
 const CARD_TYPES = [
   "Creature",
@@ -121,7 +121,7 @@ export function CardCreator() {
                 onClick={() => (setDraft(c), setReprintOn(false), setStatus(""))}
                 className={`w-full truncate rounded px-2 py-1 text-left text-sm ${c.id === draft.id ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5"}`}
               >
-                {c.name || "Untitled"}
+                {displayName(c) || "Untitled"}
                 {c.isToken && <span className="ml-1 text-xs text-neutral-500">token</span>}
               </button>
             </li>
@@ -167,7 +167,7 @@ export function CardCreator() {
                 key={String(yes)}
                 onClick={() => {
                   setReprintOn(yes);
-                  if (!yes) set("reprintOf", undefined);
+                  if (!yes) setDraft((d) => ({ ...d, reprintOf: undefined, newName: undefined }));
                 }}
                 className={`rounded-md border px-3 py-1.5 text-sm ${isReprint === yes ? "border-amber-400 bg-amber-400/15 text-white" : "border-white/10 text-neutral-400"}`}
               >
@@ -186,8 +186,19 @@ export function CardCreator() {
           )}
         </Field>
 
+        {draft.reprintOf && (
+          <Field label="New name" wide>
+            <input
+              className="input max-w-md"
+              value={draft.newName ?? ""}
+              onChange={(e) => set("newName", e.target.value)}
+              placeholder="Your name for it, shown in parentheses"
+            />
+          </Field>
+        )}
+
         <fieldset disabled={!!draft.reprintOf} className="contents">
-        <Field label="Name">
+        <Field label={draft.reprintOf ? "Real name" : "Name"}>
           <input className="input" value={draft.name} onChange={(e) => set("name", e.target.value)} placeholder="Grand Arbiter of Proxies" />
         </Field>
         <Field label="Mana cost">

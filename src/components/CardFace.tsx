@@ -2,7 +2,7 @@
 
 import { forwardRef, useLayoutEffect, useRef } from "react";
 import type { Color, CustomCard } from "@/lib/types";
-import { customTypeLine } from "@/lib/types";
+import { customTypeLine, displayName } from "@/lib/types";
 import { ManaText } from "./ManaText";
 
 /** Card is designed at 300x419 (63x88mm) and scaled with CSS. */
@@ -124,7 +124,7 @@ export const CardFace = forwardRef<HTMLDivElement, Props>(function CardFace({ ca
         >
           <Bar box={f.box}>
             <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {card.name || "Card name"}
+              {displayName(card) || "Card name"}
             </span>
             <span style={{ display: "flex", gap: 1, flexShrink: 0 }}>
               <ManaText text={card.manaCost} size="15px" />
