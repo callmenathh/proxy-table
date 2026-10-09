@@ -4,6 +4,11 @@ import { newId } from "./types";
 
 interface ScryfallFace {
   name: string;
+  colors?: Color[];
+  power?: string;
+  toughness?: string;
+  loyalty?: string;
+  flavor_text?: string;
   mana_cost?: string;
   type_line?: string;
   oracle_text?: string;
@@ -15,6 +20,7 @@ export interface ScryfallCard extends ScryfallFace {
   set: string;
   collector_number: string;
   color_identity: Color[];
+  rarity: string;
   card_faces?: ScryfallFace[];
 }
 
@@ -95,4 +101,9 @@ export async function printings(name: string): Promise<ScryfallCard[]> {
   const res = await fetch(`${API}/cards/search?q=${q}&unique=prints&order=released`);
   if (!res.ok) return [];
   return (await res.json()).data as ScryfallCard[];
+}
+
+export async function cardByName(name: string): Promise<ScryfallCard | null> {
+  const res = await fetch(`${API}/cards/named?exact=${encodeURIComponent(name)}`);
+  return res.ok ? res.json() : null;
 }

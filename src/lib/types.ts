@@ -28,6 +28,8 @@ export interface CustomCard {
   artY: number;
   artZoom: number;
   isToken?: boolean;
+  /** Set when this card is a proxy of a real card: its rules come from Scryfall. */
+  reprintOf?: { scryfallId: string; name: string; colorIdentity: Color[] };
   createdAt: number;
   updatedAt: number;
 }
@@ -70,7 +72,8 @@ export function customTypeLine(c: Pick<CustomCard, "supertypes" | "cardType" | "
 }
 
 /** Colors from the chosen colors plus any colored mana symbols in cost or text. */
-export function customColorIdentity(c: Pick<CustomCard, "colors" | "manaCost" | "rulesText">): Color[] {
+export function customColorIdentity(c: Pick<CustomCard, "colors" | "manaCost" | "rulesText" | "reprintOf">): Color[] {
+  if (c.reprintOf) return c.reprintOf.colorIdentity;
   const found = new Set<Color>(c.colors);
   for (const m of `${c.manaCost} ${c.rulesText}`.matchAll(/\{([^}]+)\}/g)) {
     for (const ch of m[1].toUpperCase()) if (COLORS.includes(ch as Color)) found.add(ch as Color);

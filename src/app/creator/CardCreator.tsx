@@ -3,7 +3,10 @@
 import { toPng } from "html-to-image";
 import { useRef, useState } from "react";
 import { CardFace } from "@/components/CardFace";
+import { CardSearch } from "@/components/CardSearch";
 import { readImageFile } from "@/lib/images";
+import { applyReprint } from "@/lib/reprint";
+import { cardByName } from "@/lib/scryfall";
 import { useLibrary } from "@/lib/store";
 import type { Color, CustomCard, Rarity } from "@/lib/types";
 import { blankCustomCard, COLORS, newId } from "@/lib/types";
@@ -70,7 +73,19 @@ export function CardCreator() {
     }
   };
 
+  const [reprintOn, setReprintOn] = useState(false);
+  const isReprint = reprintOn || !!draft.reprintOf;
+
+  const pickReprint = async (name: string) => {
+    setStatus("Looking up card…");
+    const card = await cardByName(name);
+    if (!card) return setStatus(`Couldn't find ${name} on Scryfall.`);
+    setDraft((d) => applyReprint(d, card));
+    setStatus("");
+  };
+
   const missing = [
+    isReprint && !draft.reprintOf && "card to reprint",
     !draft.name.trim() && "name",
     !draft.cardType.trim() && "card type",
     mode === "full" && !draft.fullImage && "card image",
@@ -93,7 +108,7 @@ export function CardCreator() {
   return (
     <main className="grid flex-1 gap-6 p-5 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
       <aside className="flex flex-col gap-2">
-        <button className="btn-primary" onClick={() => (setDraft(blankCustomCard()), setStatus(""))}>
+        <button className="btn-primary" onClick={() => (setDraft(blankCustomCard()), setReprintOn(false), setStatus(""))}>
           New card
         </button>
         <p className="label mt-3">Your cards</p>
@@ -103,7 +118,7 @@ export function CardCreator() {
           {customCards.map((c) => (
             <li key={c.id}>
               <button
-                onClick={() => (setDraft(c), setStatus(""))}
+                onClick={() => (setDraft(c), setReprintOn(false), setStatus(""))}
                 className={`w-full truncate rounded px-2 py-1 text-left text-sm ${c.id === draft.id ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5"}`}
               >
                 {c.name || "Untitled"}
@@ -145,6 +160,33 @@ export function CardCreator() {
           )}
         </Field>
 
+        <Field label="Reprint of a real card?" wide>
+          <div className="flex flex-wrap items-center gap-2">
+            {[false, true].map((yes) => (
+              <button
+                key={String(yes)}
+                onClick={() => {
+                  setReprintOn(yes);
+                  if (!yes) set("reprintOf", undefined);
+                }}
+                className={`rounded-md border px-3 py-1.5 text-sm ${isReprint === yes ? "border-amber-400 bg-amber-400/15 text-white" : "border-white/10 text-neutral-400"}`}
+              >
+                {yes ? "Yes" : "No"}
+              </button>
+            ))}
+            {draft.reprintOf && <span className="text-sm text-neutral-400">Reprint of {draft.reprintOf.name}</span>}
+          </div>
+          {isReprint && (
+            <div className="mt-3 max-w-md">
+              <CardSearch key={draft.id} onPick={pickReprint} placeholder="Type the card's name, e.g. Sol Ring" />
+              <p className="mt-2 text-xs text-neutral-500">
+                The card&apos;s rules come from Scryfall and are locked. Art, flavor text and artist are yours.
+              </p>
+            </div>
+          )}
+        </Field>
+
+        <fieldset disabled={!!draft.reprintOf} className="contents">
         <Field label="Name">
           <input className="input" value={draft.name} onChange={(e) => set("name", e.target.value)} placeholder="Grand Arbiter of Proxies" />
         </Field>
@@ -153,7 +195,7 @@ export function CardCreator() {
         </Field>
         <Field label="Supertype">
           <select className="input" value={draft.supertypes} onChange={(e) => set("supertypes", e.target.value)}>
-            {SUPERTYPES.map((s) => (
+            {(SUPERTYPES.includes(draft.supertypes) ? SUPERTYPES : [...SUPERTYPES, draft.supertypes]).map((s) => (
               <option key={s} value={s}>
                 {s || "None"}
               </option>
@@ -212,11 +254,12 @@ export function CardCreator() {
             placeholder={"Flying\n{T}: Draw a card. (Text in parentheses shows as reminder text.)"}
           />
         </Field>
+        </fieldset>
         <Field label="Flavor text" wide>
           <textarea className="input min-h-14" value={draft.flavorText} onChange={(e) => set("flavorText", e.target.value)} />
         </Field>
 
-        <div className="grid grid-cols-3 gap-3 sm:col-span-2">
+        <fieldset disabled={!!draft.reprintOf} className="grid grid-cols-3 gap-3 sm:col-span-2">
           <Field label="Power">
             <input className="input" value={draft.power} onChange={(e) => set("power", e.target.value)} />
           </Field>
@@ -226,7 +269,7 @@ export function CardCreator() {
           <Field label="Loyalty">
             <input className="input" value={draft.loyalty} onChange={(e) => set("loyalty", e.target.value)} />
           </Field>
-        </div>
+        </fieldset>
 
         {mode === "frame" && (
           <Field label="Art" wide>
